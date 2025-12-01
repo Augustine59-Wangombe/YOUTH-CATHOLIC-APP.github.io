@@ -259,3 +259,51 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+
+
+
+
+<script>
+  document.getElementById("payBtn").addEventListener("click", async () => {
+    const phoneInput = document.getElementById("phone");
+    const phone = phoneInput.value;
+    const amount = 100; // Membership fee
+    const status = document.getElementById("paymentStatus");
+
+    if (!phone) {
+      status.textContent = "Please enter your phone number in the form above!";
+      return;
+    }
+
+    status.textContent = "Processing STK Push...";
+
+    try {
+      const response = await fetch("https://us-central1-nyeri-catholic-youth-app.cloudfunctions.net/stkPush", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, amount })
+      });
+
+      const data = await response.json();
+      console.log("STK Push Response:", data);
+      status.textContent = "STK Push sent! Check your phone for the payment prompt.";
+    } catch (err) {
+      console.error(err);
+      status.textContent = "Failed to send STK Push.";
+    }
+  });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
