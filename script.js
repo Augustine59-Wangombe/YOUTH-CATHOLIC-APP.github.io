@@ -260,11 +260,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-
-
-
-
-<script>
   document.getElementById("payBtn").addEventListener("click", async () => {
     const phoneInput = document.getElementById("phone");
     const phone = phoneInput.value;
@@ -293,7 +288,8 @@ document.addEventListener('DOMContentLoaded', function() {
       status.textContent = "Failed to send STK Push.";
     }
   });
-</script>
+
+
 
 
 
