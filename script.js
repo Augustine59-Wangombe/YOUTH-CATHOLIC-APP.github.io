@@ -44,7 +44,7 @@ document.getElementById("payBtn").addEventListener("click", async () => {
 
   try {
     // Trigger STK Push via Cloudflare Worker
-    const res = await fetch("https://<YOUR_WORKER_URL>", {
+    const res = await fetch("https://catholic100system.wangombeaugustine58.workers.dev", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone, amount })
@@ -53,7 +53,7 @@ document.getElementById("payBtn").addEventListener("click", async () => {
     const data = await res.json();
     console.log("STK Push Response:", data);
 
-    // For testing: assume payment is successful immediately
+    // For now assume payment worked (Cloudflare worker will finalize later)
     status.textContent = "Payment successful! Saving registration...";
 
     // Check if email already exists in Firestore
@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         parishData[selectedDenary].forEach(parish => {
           const option = document.createElement("option");
           option.text = parish;
-          option.value = parish.toLowerCase().replace(/\s+/g, "_");
+          option.value = parish;
           parishSelect.add(option);
         });
       } else {
@@ -230,4 +230,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
-
