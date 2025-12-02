@@ -1,4 +1,3 @@
-
 // -----------------------
 // SHOW FORM FUNCTION
 // -----------------------
@@ -9,72 +8,130 @@ window.showform = function(formId) {
 };
 
 // -----------------------
-// REGISTER USER (LOCAL STORAGE)
+// FIRESTORE SETUP
 // -----------------------
-window.registerUser = function() {
-  const fullName = document.getElementById("fullName").value;
-  const email = document.getElementById("email").value.toLowerCase();
-  const password = document.getElementById("password").value;
-  const denary = document.getElementById("denary").value;
-  const parish = document.getElementById("parish").value;
-  const role = document.getElementById("role").value;
-  const level = document.getElementById("level").value;
-  const position = document.getElementById("position").value;
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-  // Get all users stored before
-  let users = JSON.parse(localStorage.getItem("users")) || {};
+const firebaseConfig = {
+  apiKey: "AIzaSyAeKby7DVfy8070ZjgVRqN-dauNiK_CrQ",
+  authDomain: "nyeri-catholic-youth-app.firebaseapp.com",
+  projectId: "nyeri-catholic-youth-app",
+  storageBucket: "nyeri-catholic-youth-app.appspot.com",
+  messagingSenderId: "2807748399",
+  appId: "1:2807748399:web:a33bb5ea33a2ad87bb3da",
+  measurementId: "G-9HRL154BDP"
+};
 
-  // Check if email already exists
-  if (users[email]) {
-    alert("This email is already registered. Please login instead.");
-    showform("login-form");
-    return;
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// -----------------------
+// PAY & REGISTER USER
+// -----------------------
+document.getElementById("payBtn").addEventListener("click", async () => {
+  const form = document.getElementById("registerForm");
+  const phone = form.phone.value;
+  const status = document.getElementById("paymentStatus");
+  const amount = 100; // Membership fee
+
+  if (!phone) { 
+    status.textContent = "Please enter your phone number!"; 
+    return; 
   }
 
-  // Save user
-  users[email] = {
-    fullName,
-    email,
-    password,
-    denary,
-    parish,
-    role,
-    level,
-    position,
-    createdAt: new Date().toISOString()
-  };
+  status.textContent = "Processing STK Push...";
 
-  localStorage.setItem("users", JSON.stringify(users));
+  try {
+    // Trigger STK Push via Cloudflare Worker
+    const res = await fetch("https://<YOUR_WORKER_URL>", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, amount })
+    });
 
-  alert("Registration successful! Please login.");
-  showform("login-form");
-};
+    const data = await res.json();
+    console.log("STK Push Response:", data);
+
+    // For testing: assume payment is successful immediately
+    status.textContent = "Payment successful! Saving registration...";
+
+    // Check if email already exists in Firestore
+    const email = form.Email.value.toLowerCase();
+    const q = query(collection(db, "registrations"), where("Email", "==", email));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      alert("This email is already registered. Please login.");
+      showform("login-form");
+      return;
+    }
+
+    // Collect registration data
+    const registrationData = {
+      name: form.name?.value || "",
+      diocese: form.diocese?.value || "",
+      denary: form.denary?.value || "",
+      parish: form.parish?.value || "",
+      local_church: form.local_church?.value || "",
+      Education: form.Education?.value || "",
+      Current_Status: form["Current-Status"]?.value || "",
+      Baptised: form.Baptised?.value || "",
+      Confirmed: form.Confirmed?.value || "",
+      Gender: form.Gender?.value || "",
+      Marital_Status: form["Marital-Status"]?.value || "",
+      Different_abled: form["Different-abled"]?.value || "",
+      role: form.role?.value || "",
+      Age: form.Age?.value || "",
+      position: form.position?.value || "",
+      phone: phone,
+      Email: email,
+      password: form.password?.value || "",
+      timestamp: new Date()
+    };
+
+    await addDoc(collection(db, "registrations"), registrationData);
+
+    alert("✅ Registration and payment saved!");
+    form.reset();
+    window.location.href = "Youths dashboard.html";
+
+  } catch (err) {
+    console.error(err);
+    status.textContent = "Failed to process payment/registration.";
+  }
+});
 
 // -----------------------
 // LOGIN USER
 // -----------------------
-window.loginUser = function() {
+window.loginUser = async function() {
   const email = document.getElementById("loginEmail").value.toLowerCase();
   const password = document.getElementById("loginPassword").value;
 
-  let users = JSON.parse(localStorage.getItem("users")) || {};
+  try {
+    const q = query(collection(db, "registrations"), where("Email", "==", email));
+    const querySnapshot = await getDocs(q);
 
-  if (!users[email]) {
-    alert("This account does not exist. Please register.");
-    showform("register-form");
-    return;
+    if (querySnapshot.empty) {
+      alert("This account does not exist. Please register.");
+      showform("register-form");
+      return;
+    }
+
+    const userDoc = querySnapshot.docs[0].data();
+    if (userDoc.password !== password) {
+      alert("Wrong password. Try again.");
+      return;
+    }
+
+    localStorage.setItem("loggedInUser", email);
+    window.location.href = "Youths dashboard.html";
+
+  } catch (err) {
+    console.error(err);
+    alert("Error logging in. Check console.");
   }
-
-  if (users[email].password !== password) {
-    alert("Wrong password. Try again.");
-    return;
-  }
-
-  // Store login state
-  localStorage.setItem("loggedInUser", email);
-
-  // Redirect to dashboard
-  window.location.href = "Youths dashboard.html";
 };
 
 // -----------------------
@@ -86,79 +143,19 @@ window.logoutUser = function() {
 };
 
 // -----------------------
-// DENARY → PARISH LOGIC (UNCHANGED)
+// DENARY → PARISH & LEADERSHIP LOGIC
 // -----------------------
 document.addEventListener('DOMContentLoaded', function() {
 
   const parishData = {
-    nyeri: [
-      "Our Lady of Consolata Cathedral",
-      "St. Jude Parish",
-      "King'ong'o Parish",
-      "Mwenji Parish",
-      "Kiamuiru Parish",
-      "Mathari Institutions Chaplaincy",
-      "St. Charles Lwanga Parish"
-    ],
-    othaya: [
-      "Othaya Parish",
-      "Kariko Parish",
-      "Birithia Parish",
-      "Karima Parish",
-      "Kagicha Parish",
-      "Karuthi Parish",
-      "Kigumo Parish"
-    ],
-    karatina: [
-      "Karatina Parish",
-      "Miiri Parish",
-      "Giakaibei Parish",
-      "Gikumbo Parish",
-      "Gathugu Parish",
-      "Ngandu Parish",
-      "Kabiru-ini Parish",
-      "Kahira-ini Parish"
-    ],
-    mukurweini: [
-      "Mukurwe-ini Parish",
-      "Kaheti Parish",
-      "Kimondo Parish",
-      "Gikondi Parish"
-    ],
-    mweiga: [
-      "Mweiga Parish",
-      "Endarasha Parish",
-      "Gatarakwa Parish",
-      "Karemeno Parish",
-      "Mugunda Parish",
-      "Sirima Parish",
-      "Winyumiririe Parish",
-      "Kamariki Parish"
-    ],
-    tetu: [
-      "Tetu Parish",
-      "Wamagana Parish",
-      "Kigogo-ini Parish",
-      "Itheguri Parish",
-      "Gititu Parish",
-      "Kagaita Parish",
-      "Giakanja Parish",
-      "Karangia Parish"
-    ],
-    naromoru: [
-      "Narumoru Town Parish",
-      "Irigithathi Parish",
-      "Thegu Parish",
-      "Kiganjo Parish",
-      "Munyu Parish"
-    ],
-    nanyuki: [
-      "Nanyuki Parish",
-      "Dol Dol Parish",
-      "Matanya Parish",
-      "St. Teresa Parish",
-      "Kalalu Parish"
-    ]
+    nyeri: ["Our Lady of Consolata Cathedral","St. Jude Parish","King'ong'o Parish","Mwenji Parish","Kiamuiru Parish","Mathari Institutions Chaplaincy","St. Charles Lwanga Parish"],
+    othaya: ["Othaya Parish","Kariko Parish","Birithia Parish","Karima Parish","Kagicha Parish","Karuthi Parish","Kigumo Parish"],
+    karatina: ["Karatina Parish","Miiri Parish","Giakaibei Parish","Gikumbo Parish","Gathugu Parish","Ngandu Parish","Kabiru-ini Parish","Kahira-ini Parish"],
+    mukurweini: ["Mukurwe-ini Parish","Kaheti Parish","Kimondo Parish","Gikondi Parish"],
+    mweiga: ["Mweiga Parish","Endarasha Parish","Gatarakwa Parish","Karemeno Parish","Mugunda Parish","Sirima Parish","Winyumiririe Parish","Kamariki Parish"],
+    tetu: ["Tetu Parish","Wamagana Parish","Kigogo-ini Parish","Itheguri Parish","Gititu Parish","Kagaita Parish","Giakanja Parish","Karangia Parish"],
+    naromoru: ["Narumoru Town Parish","Irigithathi Parish","Thegu Parish","Kiganjo Parish","Munyu Parish"],
+    nanyuki: ["Nanyuki Parish","Dol Dol Parish","Matanya Parish","St. Teresa Parish","Kalalu Parish"]
   };
 
   const denarySelect = document.getElementById("denary");
@@ -186,39 +183,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // -----------------------
-  // LEADERSHIP LOGIC (UNCHANGED)
-  // -----------------------
+  // Leadership logic
   const roleSelect = document.getElementById('role');
   const leadershipSection = document.getElementById('leadershipSection');
   const positionSection = document.getElementById('positionSection');
   const levelSelect = document.getElementById('level');
   const positionSelect = document.getElementById('position');
 
-  const parishPositions = [
-    "Parish Coordinator",
-    "Parish vice coordinator",
-    "Parish Secretary",
-    "Parish vice secretary",
-    "Parish Treasurer",
-    "Parish litergist",
-    "Parish vice litergist",
-    "Parish organing secretary",
-    "Parish games captain",
-    "Parish Disciplinarian"
-  ];
-
-  const localPositions = [
-    "Local Coordinator",
-    "Local vice coordinator",
-    "Local Secretary",
-    "Local vice secretary",
-    "Local litergist",
-    "Local vice litergist",
-    "Local organing secretary",
-    "Local games captain",
-    "Local Disciplinarian"
-  ];
+  const parishPositions = ["Parish Coordinator","Parish vice coordinator","Parish Secretary","Parish vice secretary","Parish Treasurer","Parish litergist","Parish vice litergist","Parish organing secretary","Parish games captain","Parish Disciplinarian"];
+  const localPositions = ["Local Coordinator","Local vice coordinator","Local Secretary","Local vice secretary","Local litergist","Local vice litergist","Local organing secretary","Local games captain","Local Disciplinarian"];
 
   if (roleSelect) {
     roleSelect.addEventListener('change', function() {
@@ -243,7 +216,6 @@ document.addEventListener('DOMContentLoaded', function() {
           positionSelect.appendChild(option);
         });
         positionSection.style.display = 'block';
-
       } else if (this.value === 'local') {
         localPositions.forEach(pos => {
           const option = document.createElement('option');
@@ -252,54 +224,10 @@ document.addEventListener('DOMContentLoaded', function() {
           positionSelect.appendChild(option);
         });
         positionSection.style.display = 'block';
-
       } else {
         positionSection.style.display = 'none';
       }
     });
   }
 });
-
-  document.getElementById("payBtn").addEventListener("click", async () => {
-    const phoneInput = document.getElementById("phone");
-    const phone = phoneInput.value;
-    const amount = 100; // Membership fee
-    const status = document.getElementById("paymentStatus");
-
-    if (!phone) {
-      status.textContent = "Please enter your phone number in the form above!";
-      return;
-    }
-
-    status.textContent = "Processing STK Push...";
-
-    try {
-      const response = await fetch("https://us-central1-nyeri-catholic-youth-app.cloudfunctions.net/stkPush", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, amount })
-      });
-
-      const data = await response.json();
-      console.log("STK Push Response:", data);
-      status.textContent = "STK Push sent! Check your phone for the payment prompt.";
-    } catch (err) {
-      console.error(err);
-      status.textContent = "Failed to send STK Push.";
-    }
-  });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
