@@ -260,57 +260,46 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// ----------------------------
+// M-PESA STK PUSH FUNCTION
+// ----------------------------
+async function sendSTKPush() {
+  const phoneInput = document.getElementById("phone");
+  const phone = phoneInput.value.replace(/\s+/g, "");
 
+  if (!phone.startsWith("254") || phone.length !== 12) {
+    alert("Enter valid phone number in format 2547XXXXXXXX");
+    return;
+  }
 
+  try {
+    const res = await fetch("https://catholic100system.wangombeaugustine58.workers.dev/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phone: phone,
+        amount: 1
+      })
+    });
 
+    const data = await res.json();
+    console.log("STK Response:", data);
 
+    alert("If this is a valid Safaricom sandbox number, you will receive an STK prompt.");
 
-const WORKER_URL = "https://catholic100system.wangombeaugustine58.workers.dev/";
+  } catch (err) {
+    console.error(err);
+    alert("STK request failed. Check console.");
+  }
+}
 
-    async function testStkPush() {
-      const statusDiv = document.getElementById("status");
-      statusDiv.textContent = "Sending STK Push...";
-
-      try {
-        const response = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: "254708374149", // Sandbox test number
-            amount: 1              // Test amount
-          })
-        });
-
-        const data = await response.json();
-        console.log("STK Push Response:", data);
-
-        // Show result on the page
-        if (data.ResponseDescription) {
-          statusDiv.textContent = `STK Push Sent: ${data.ResponseDescription}`;
-        } else if (data.error) {
-          statusDiv.textContent = `Error: ${data.error}`;
-        } else {
-          statusDiv.textContent = "STK Push request sent. Check console for response.";
-        }
-      } catch (err) {
-        console.error("Error sending STK Push:", err);
-        statusDiv.textContent = "Error sending STK Push. Check console.";
-      }
-    }
-
-    // Attach function to button click
-    document.getElementById("payBtn").addEventListener("click", testStkPush);
-  
-
-
-
-
-
-
-
-
-
-
+// ----------------------------
+// ATTACH BUTTON EVENT
+// ----------------------------
+document.getElementById("payBtn").addEventListener("click", function (e) {
+  e.preventDefault();
+  sendSTKPush();
+});
 
 
 
