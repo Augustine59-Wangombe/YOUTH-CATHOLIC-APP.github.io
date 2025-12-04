@@ -259,3 +259,48 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 });
+
+
+
+// Replace with your actual Cloudflare Worker URL
+const WORKER_URL = "https://catholic100system.wangombeaugustine58.workers.dev/";
+
+async function testStkPush() {
+  try {
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        phone: "254708374149", // Safaricom test number
+        amount: 1              // Test amount
+      })
+    });
+
+    const data = await response.json();
+    console.log("STK Push Response:", data);
+  } catch (err) {
+    console.error("Error:", err);
+  }
+}
+
+// Run the test
+testStkPush();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
