@@ -262,34 +262,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 
-// Replace with your actual Cloudflare Worker URL
+
+
+
 const WORKER_URL = "https://catholic100system.wangombeaugustine58.workers.dev/";
 
-async function testStkPush() {
-  try {
-    const response = await fetch(WORKER_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        phone: "254708374149", // Safaricom test number
-        amount: 1              // Test amount
-      })
-    });
+    async function testStkPush() {
+      const statusDiv = document.getElementById("status");
+      statusDiv.textContent = "Sending STK Push...";
 
-    const data = await response.json();
-    console.log("STK Push Response:", data);
-  } catch (err) {
-    console.error("Error:", err);
-  }
-}
+      try {
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: "254708374149", // Sandbox test number
+            amount: 1              // Test amount
+          })
+        });
 
-// Run the test
-testStkPush();
+        const data = await response.json();
+        console.log("STK Push Response:", data);
 
+        // Show result on the page
+        if (data.ResponseDescription) {
+          statusDiv.textContent = `STK Push Sent: ${data.ResponseDescription}`;
+        } else if (data.error) {
+          statusDiv.textContent = `Error: ${data.error}`;
+        } else {
+          statusDiv.textContent = "STK Push request sent. Check console for response.";
+        }
+      } catch (err) {
+        console.error("Error sending STK Push:", err);
+        statusDiv.textContent = "Error sending STK Push. Check console.";
+      }
+    }
 
-
+    // Attach function to button click
+    document.getElementById("payBtn").addEventListener("click", testStkPush);
+  
 
 
 
