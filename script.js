@@ -1,3 +1,4 @@
+
 // -----------------------
 // SHOW FORM FUNCTION
 // -----------------------
@@ -42,7 +43,6 @@ async function registerUserAfterPayment() {
   };
 
   localStorage.setItem("users", JSON.stringify(users));
-
   alert("Registration successful! Please login.");
   showform("login-form");
 }
@@ -149,6 +149,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // ----------------------------
 // M-PESA STK PUSH
 // ----------------------------
+const renderBackend = "https://augustine59-wangombe-github-io-catholic-uorf.onrender.com";
+
 async function sendSTKPush() {
   const phoneInput = document.getElementById("phone");
   const phone = phoneInput.value.replace(/\s+/g, "");
@@ -159,7 +161,7 @@ async function sendSTKPush() {
   }
 
   try {
-    const res = await fetch("https://catholic100system.wangombeaugustine58.workers.dev/stkpush", {
+    const res = await fetch(`${renderBackend}/stkpush`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phone: phone, amount: 100 })
@@ -169,9 +171,7 @@ async function sendSTKPush() {
     console.log("STK Response:", data);
     alert("If the number is valid, you will receive an STK prompt.");
 
-    // ----------------------------
-    // POLL PAYMENT STATUS
-    // ----------------------------
+    // Start polling payment status
     pollPaymentStatus(phone);
 
   } catch (err) {
@@ -187,15 +187,16 @@ async function pollPaymentStatus(phone) {
   const statusEl = document.getElementById("paymentStatus");
   statusEl.textContent = "Waiting for payment confirmation...";
 
-  const maxAttempts = 12; // e.g., 12 times = 1 minute
+  const maxAttempts = 12; // 1 minute
   const interval = 5000; // 5 seconds
   let attempts = 0;
 
   const timer = setInterval(async () => {
     attempts++;
     try {
-      const res = await fetch(`https://catholic100system.wangombeaugustine58.workers.dev/check-payment?phone=${phone}`);
+      const res = await fetch(`${renderBackend}/check-payment?phone=${phone}`);
       const data = await res.json();
+
       if (data.paid) {
         clearInterval(timer);
         statusEl.textContent = "Payment received! Registering...";
